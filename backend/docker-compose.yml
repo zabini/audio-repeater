@@ -1,0 +1,62 @@
+version: "3.7"
+services:
+
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks:
+      - audio-repeater-net
+
+  app:
+    build:
+      args:
+        user: sammy
+        uid: 1000
+      context: ./
+      dockerfile: Dockerfile
+    image: audio-repeater
+    container_name: audio-repeater-app
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./:/var/www
+    networks:
+      - audio-repeater-net
+
+  db:
+    image: mysql:5.7
+    container_name: audio-repeater-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - ./docker-compose/mysql:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+    networks:
+      - audio-repeater-net
+
+  nginx:
+    image: nginx:alpine
+    container_name: audio-repeater-nginx
+    restart: unless-stopped
+    environment:
+      - VIRTUAL_HOST=${APP_DOMAIN},*.${APP_DOMAIN}
+    ports:
+      - "8081:80"
+    volumes:
+      - ./:/var/www
+      - ./docker-compose/nginx:/etc/nginx/conf.d/
+    networks:
+      - audio-repeater-net
+
+networks:
+  audio-repeater-net:
