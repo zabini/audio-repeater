@@ -15,5 +15,5 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return "<h1>API server is working</h1>";
+    return response()->json(['API is Working']);
 });
